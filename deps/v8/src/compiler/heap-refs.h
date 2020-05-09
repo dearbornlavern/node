@@ -12,6 +12,8 @@
 #include "src/objects/instance-type.h"
 
 namespace v8 {
+class CFunctionInfo;
+
 namespace internal {
 
 class BytecodeArray;
@@ -317,6 +319,7 @@ class V8_EXPORT_PRIVATE JSFunctionRef : public JSObjectRef {
   bool has_feedback_vector() const;
   bool has_initial_map() const;
   bool has_prototype() const;
+  bool IsOptimized() const;
   bool PrototypeRequiresRuntimeLookup() const;
 
   void Serialize();
@@ -329,6 +332,7 @@ class V8_EXPORT_PRIVATE JSFunctionRef : public JSObjectRef {
   NativeContextRef native_context() const;
   SharedFunctionInfoRef shared() const;
   FeedbackVectorRef feedback_vector() const;
+  CodeRef code() const;
   int InitialMapInstanceSizeWithMinSlack() const;
 };
 
@@ -417,8 +421,6 @@ class ContextRef : public HeapObjectRef {
   V(Map, with_context_map)                                            \
   V(ScriptContextTable, script_context_table)                         \
   V(SharedFunctionInfo, promise_capability_default_reject_shared_fun) \
-  V(SharedFunctionInfo, promise_catch_finally_shared_fun)             \
-  V(SharedFunctionInfo, promise_then_finally_shared_fun)              \
   V(SharedFunctionInfo, promise_capability_default_resolve_shared_fun)
 
 // Those are set by Bootstrapper::ExportFromRuntime, which may not yet have
@@ -490,7 +492,7 @@ class FeedbackCellRef : public HeapObjectRef {
   DEFINE_REF_CONSTRUCTOR(FeedbackCell, HeapObjectRef)
 
   Handle<FeedbackCell> object() const;
-
+  base::Optional<SharedFunctionInfoRef> shared_function_info() const;
   HeapObjectRef value() const;
 };
 
@@ -500,9 +502,11 @@ class FeedbackVectorRef : public HeapObjectRef {
 
   Handle<FeedbackVector> object() const;
 
+  SharedFunctionInfoRef shared_function_info() const;
   double invocation_count() const;
 
   void Serialize();
+  bool serialized() const;
   FeedbackCellRef GetClosureFeedbackCell(int index) const;
 };
 
@@ -659,6 +663,8 @@ class FunctionTemplateInfoRef : public HeapObjectRef {
 
   void SerializeCallCode();
   base::Optional<CallHandlerInfoRef> call_code() const;
+  Address c_function() const;
+  const CFunctionInfo* c_signature() const;
 
   HolderLookupResult LookupHolderOfExpectedType(
       MapRef receiver_map,
@@ -914,6 +920,8 @@ class CodeRef : public HeapObjectRef {
   DEFINE_REF_CONSTRUCTOR(Code, HeapObjectRef)
 
   Handle<Code> object() const;
+
+  unsigned inlined_bytecode_size() const;
 };
 
 class InternalizedStringRef : public StringRef {
